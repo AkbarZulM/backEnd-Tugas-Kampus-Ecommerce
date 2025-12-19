@@ -1,0 +1,78 @@
+{
+  "name": "food-store-api",
+  "version": "1.0.0",
+  "description": "API untuk toko makanan/minuman",
+  "keywords": [
+    "food-delivery",
+    "coffee-shop",
+    "restaurant-api",
+    "order-management"
+  ],
+  "homepage": "https://github.com/yourusername/food-store#readme",
+  "bugs": {
+    "url": "https://github.com/yourusername/food-store/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/food-store.git"
+  },
+  "license": "MIT",
+  "author": "Your Name",
+  "type": "module",
+  "main": "src/server.mjs",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "test": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "prisma:studio": "prisma studio",
+    "prisma:seed": "node prisma/seed.js",
+    "db:reset": "prisma migrate reset && npm run prisma:seed",
+    "db:push": "prisma db push",
+    "lint": "eslint src/**/*.js",
+    "lint:fix": "eslint src/**/*.js --fix",
+    "format": "prettier --write src/**/*.js",
+    "prepare": "husky install"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.8.0",
+    "compression": "^1.7.4",
+    "connect-redis": "^9.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.1",
+    "express": "^4.22.1",
+    "express-rate-limit": "^7.1.5",
+    "express-session": "^1.18.2",
+    "express-validator": "^7.0.1",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "multer-storage-cloudinary": "^4.0.0",
+    "nanoid": "^5.0.5",
+    "redis": "^5.10.0",
+    "sharp": "^0.33.2",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.2.0",
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.0.0",
+    "eslint": "^9.2.0",
+    "globals": "^15.0.0",
+    "husky": "^9.0.11",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.3",
+    "prettier": "^3.2.5",
+    "prisma": "^5.22.0",
+    "supertest": "^6.3.4"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
