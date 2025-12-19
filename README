@@ -5,7 +5,7 @@ Tujuan: manajemen akun admin (CRUD + autentikasi).
 POST /api/admin/register
 Buat admin baru.
 Body (contoh): { "email": "...", "password": "...", "fullname": "..." }
-Respons: data admin (idealnya tanpa password hash) + token kalau kamu pakai token.
+Respons: data admin 
 
 POST /api/admin/login
 Login admin.
