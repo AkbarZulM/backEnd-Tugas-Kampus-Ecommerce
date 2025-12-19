@@ -107,12 +107,10 @@ Tujuan: pembayaran order dan ambil data pembayaran.
 
 Endpoints
 
-POST /api/payment/:orderId (protected)
+POST /api/payment/:orderId 
 
 GET /api/payment/:orderId
 Ambil data payment berdasarkan orderId.
-
-Catatan: seharusnya protected (owner/admin), karena ini data finansial.
 
 transferProofUrl: file bukti transfer (image)
 
