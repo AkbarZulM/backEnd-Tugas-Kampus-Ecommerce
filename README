@@ -1,1 +1,118 @@
+1) Admin Router
+
+Tujuan: manajemen akun admin (CRUD + autentikasi).
+
+POST /api/admin/register
+Buat admin baru.
+Body (contoh): { "email": "...", "password": "...", "fullname": "..." }
+Respons: data admin (idealnya tanpa password hash) + token kalau kamu pakai token.
+
+POST /api/admin/login
+Login admin.
+Body: { "email": "...", "password": "..." }
+Respons: token/session + profil admin.
+
+GET /api/admin
+Ambil semua admin.
+Catatan: seharusnya protected (admin only).
+
+GET /api/admin/:id
+Ambil admin by id.
+
+PUT /api/admin/:id
+Update admin by id (full update).
+Catatan: kalau update parsial lebih cocok PATCH.
+
+DELETE /api/admin/:id
+Hapus admin by id.
+Catatan: biasanya dibatasi super-admin.
+
+2) Customer Router
+
+Tujuan: registrasi/login customer, profil, dan alamat.
+
+Endpoints
+
+POST /api/customer/register
+Registrasi customer baru.
+Body (contoh): { "email": "...", "password": "...", "fullname": "...", "phone": "..." }
+
+POST /api/customer/login
+Login customer.
+
+POST /api/customer/address
+Tambah alamat customer.
+Catatan penting: endpoint ini harusnya protected (customer login), dan idealnya customerId diambil dari session/token, bukan dari body biar tidak bisa spoofing.
+
+GET /api/customer/:id
+Ambil data customer by id.
+Catatan: kalau ini public, data pribadi bisa bocor. Idealnya hanya owner/admin.
+
+GET /api/customer/addres/:id
+Ambil semua alamat milik customer tertentu.
+Catatan: typo route (addres) bikin tim sering salah panggil. Idealnya rename jadi /address/:customerId atau /customers/:id/addresses.
+
+GET /api/customer
+Ambil semua customer (admin only).
+
+PATCH /:id (belum)
+Update parsial customer by id.
+
+DELETE /:id (belum)
+Hapus customer by id.
+
+3) Product Router
+
+Tujuan: CRUD produk + upload gambar produk.
+
+Endpoints
+
+POST /api/product-create
+Buat produk baru dengan upload gambar.
+Middleware: upload.single("imageUrl")
+Form-data:
+
+imageUrl: file gambar
+
+field lain: sku, name, price, stock, dll
+Respons: data produk + image URL.
+
+GET /api//products
+List semua produk (public).
+
+GET /api/product/:id
+Detail produk by id.
+
+4) Order Router
+
+Tujuan: bikin draft order, tambah item, lihat draft, dan bayar order.
+
+Endpoints
+
+POST /api/draft (protected: requireCustomer)
+Buat draft order untuk customer yang login.
+Output: draft order + id.
+
+POST /api/:orderId/items (protected)
+Tambahkan item ke draft order tertentu.
+Body (contoh): { "productId": "...", "qty": 2 }
+Catatan: endpoint ini harus validasi: order milik customer + status masih draft/pending.
+
+GET /api/draft (protected)
+Ambil semua data draft milik customer (atau draft aktif).
+
+5) Payment Router (di dalam Order Router)
+
+Tujuan: pembayaran order dan ambil data pembayaran.
+
+Endpoints
+
+POST /api/payment/:orderId (protected)
+
+GET /api/payment/:orderId
+Ambil data payment berdasarkan orderId.
+
+Catatan: seharusnya protected (owner/admin), karena ini data finansial.
+
+transferProofUrl: file bukti transfer (image)
 
