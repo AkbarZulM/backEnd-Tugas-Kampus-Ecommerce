@@ -21,25 +21,26 @@ const app = express();
 
 app.use(
   cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: ["http://localhost:5173", "http://localhost:3000"],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   })
 );
 
-app.set("trust proxy", 1); // penting kalau deploy di railway/render/vercel proxy
+app.set("trust proxy", 1);
 
 app.use(
   session({
-    name: "sid", // nama cookie
+    name: "sid",
     secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: false, // jangan bikin session kosong
+    saveUninitialized: false,
     store: new RedisStore({ client: redisClient }),
     cookie: {
-      httpOnly: true, // JS tidak bisa akses
-      secure: process.env.NODE_ENV === "production", // wajib https di prod
-      sameSite: "lax", // aman default; pakai "none" kalau beda domain + https
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 hari
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 1000 * 60 * 60 * 24 * 7,
     },
   })
 );

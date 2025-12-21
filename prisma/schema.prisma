@@ -14,6 +14,7 @@ datasource db {
 }
 
 enum OrderStatus {
+  DRAFT
   PENDING
   CONFIRMED
   ON_DELIVERY
@@ -203,7 +204,7 @@ model Payment {
   paymentStatus PaymentStatus @default(PENDING) @map("payment_status")
   amount        Decimal       @db.Decimal(12, 2)
 
-  // Untuk transfer manual (bukti transfer)
+  // Untuk transfer manual 
   bankName         String @map("bank_name")
   accountNumber    String @map("account_number")
   accountName      String @map("account_name")

@@ -12,18 +12,15 @@ const limits = {
 };
 
 const filter = (req, file, cb) => {
-  if (
-    file.mimetype == "image/png" ||
-    file.mimetype == "image/jpg" ||
-    file.mimetype == "image/jpeg"
-  ) {
-    cb(null, true);
-  } else {
-    cb(null, false);
-    return cb(new Error("Only .png, .jpg and .jpeg format allowed!"));
-  }
+  const ok = ["image/png", "image/jpeg", "image/jpg"].includes(file.mimetype);
+  if (ok) return cb(null, true);
+  return cb(new Error("Only .png, .jpg and .jpeg format allowed!"), false);
 };
 
-const upload = multer({ storage: storage, limits: limits, fileFilter: filter });
+const uploadMulter = multer({
+  storage: storage,
+  limits: limits,
+  fileFilter: filter,
+});
 
-export default upload;
+export default uploadMulter;

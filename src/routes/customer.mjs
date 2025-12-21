@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireCustomer } from "../utils/helpres.js";
 import {
   registerCustomer,
   createAddress,
@@ -6,18 +7,21 @@ import {
   getCustomerById,
   getAddressesByCustomerId,
   loginCustomer,
-  patchCustomerById,
-  deleteCustomerById,
+  patchCustomer,
+  logoutCustomer,
+  patchAddressById,
 } from "../controllers/customerController.mjs";
+
 const router = Router();
 
 router.post("/register", registerCustomer);
 router.post("/login", loginCustomer);
 router.post("/address", createAddress);
-router.get("/:id", getCustomerById);
-router.get("/addres/:id", getAddressesByCustomerId);
 router.get("/", getAllCustomers);
-router.patch("/:id", patchCustomerById);
-router.delete("/:id", deleteCustomerById);
+router.get("/:id", requireCustomer, getCustomerById);
+router.get("/addres/:id", requireCustomer, getAddressesByCustomerId);
+router.post("/logout", requireCustomer, logoutCustomer);
+router.patch("/me", requireCustomer, patchCustomer);
+router.patch("/address/:id", requireCustomer, patchAddressById);
 
 export default router;

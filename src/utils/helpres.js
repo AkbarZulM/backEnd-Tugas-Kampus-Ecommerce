@@ -1,13 +1,49 @@
 import { Prisma } from "@prisma/client";
-export function requireCustomer(req, res, next) {
-  const customer = req.session.customer;
-  if (!customer) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
+import prisma from "../utils/prisma.js";
 
-  req.customer = customer;
-  next();
+export async function requireCustomer(req, res, next) {
+  try {
+    const sessCustomer = req.session?.customer;
+    if (!sessCustomer?.id) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // cek ulang ke DB: masih ada & belum soft delete
+    const customer = await prisma.customer.findFirst({
+      where: { id: sessCustomer.id, deletedAt: null },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+      },
+    });
+
+    if (!customer) {
+      req.session.destroy(() => {});
+      res.clearCookie("sid", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+      });
+      return res.status(401).json({ error: "Session invalid" });
+    }
+
+    req.customer = customer;
+    next();
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 }
+
+export const requireAdmin = (req, res, next) => {
+  const admin = req.session?.admin;
+  if (!admin?.id) return res.status(401).json({ error: "Admin not found" });
+
+  req.admin = admin;
+  next();
+};
 
 async function applyDiscount(tx, { discountCode, subtotal }) {
   if (!discountCode) {

@@ -1,6 +1,14 @@
 import prisma from "../utils/prisma.js";
 import bcrypt from "bcrypt";
 
+const ALLOWED_ADMIN_STATUS = new Set([
+  "CONFIRMED",
+  "ON_DELIVERY",
+  "DELIVERED",
+  "CANCELLED",
+  "REFUNDED",
+]);
+
 export const createAdmin = async (req, res) => {
   try {
     const { name, email, phone, passwordHash, role } = req.body;
@@ -33,50 +41,41 @@ export const createAdmin = async (req, res) => {
 };
 
 export const loginAdmin = async (req, res) => {
-  try {
-    const { email, passwordHash } = req.body;
+  const { email, passwordHash } = req.body;
 
-    if (!email || !passwordHash) {
-      return res.status(400).json({ error: "Missing required fields" });
+  const admin = await prisma.admin.findUnique({
+    where: { email },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      passwordHash: true,
+    },
+  });
+
+  if (!admin) return res.status(404).json({ error: "Admin not found" });
+
+  const ok = await bcrypt.compare(passwordHash, admin.passwordHash);
+  if (!ok) return res.status(401).json({ error: "Invalid password" });
+
+  req.session.admin = {
+    id: admin.id,
+    email: admin.email,
+    role: admin.role,
+  };
+
+  req.session.save((err) => {
+    if (err) {
+      console.error("session save error:", err);
+      return res.status(500).json({ error: "Session save failed" });
     }
 
-    const admin = await prisma.admin.findUnique({
-      where: { email },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        role: true,
-        passwordHash: true,
-        createdAt: true,
-      },
-    });
-
-    if (!admin) return res.status(404).json({ error: "Admin not found" });
-
-    const isPasswordValid = await bcrypt.compare(
-      passwordHash,
-      admin.passwordHash
-    );
-    if (!isPasswordValid)
-      return res.status(401).json({ error: "Invalid password" });
-
-    // response minimal
-    return res.status(200).json({
+    return res.json({
       message: "Login success",
-      admin: {
-        id: admin.id,
-        name: admin.name,
-        email: admin.email,
-        phone: admin.phone,
-        role: admin.role,
-      },
+      admin: req.session.admin,
     });
-  } catch (error) {
-    console.error("loginAdmin error:", error);
-    return res.status(500).json({ error: error.message });
-  }
+  });
 };
 
 export const getAllAdmin = async (req, res) => {
@@ -104,6 +103,7 @@ export const getAdminById = async (req, res) => {
 export const updateAdminById = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id) return res.status(404).json({ error: "Admin not found" });
     const { name, email, phone } = req.body;
     const admin = await prisma.admin.update({
       where: { id },
@@ -124,5 +124,85 @@ export const deleteAdminById = async (req, res) => {
   } catch (error) {
     console.error("deleteAdminById error:", error);
     return res.status(500).json({ error: error.message });
+  }
+};
+
+export const deleteCustomerById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.customer.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+    return res.status(200).json({ message: "Customer deleted successfully" });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+export const adminGetOrders = async (req, res) => {
+  try {
+    const orders = await prisma.order.findMany({
+      where: { status: { in: ["PENDING", "CONFIRMED"] } },
+      include: {
+        items: true,
+        customer: {
+          select: { id: true, name: true, phone: true, email: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    console.log(orders);
+    return res.status(200).json(orders);
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+};
+
+export const adminUpdateOrderStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status, notes } = req.body;
+    const adminId = req.admin.id;
+
+    if (!orderId) return res.status(400).json({ error: "Missing orderId" });
+    if (!ALLOWED_ADMIN_STATUS.has(status)) {
+      return res.status(400).json({ error: "Invalid status for admin update" });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findFirst({
+        where: { id: orderId },
+        select: { id: true, status: true },
+      });
+      if (!order) throw new Error("Order not found");
+
+      if (status === "ON_DELIVERY" && order.status !== "CONFIRMED") {
+        throw new Error("ON_DELIVERY hanya boleh setelah CONFIRMED");
+      }
+      if (status === "DELIVERED" && order.status !== "ON_DELIVERY") {
+        throw new Error("DELIVERED hanya boleh setelah ON_DELIVERY");
+      }
+
+      const updated = await tx.order.update({
+        where: { id: orderId },
+        data: { status },
+      });
+
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId,
+          status,
+          notes: notes ?? null,
+          changedBy: adminId, // ✅ penting
+        },
+      });
+
+      return updated;
+    });
+
+    return res.status(200).json({ ok: true, order: result });
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
   }
 };

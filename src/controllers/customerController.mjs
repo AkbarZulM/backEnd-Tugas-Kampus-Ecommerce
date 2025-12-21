@@ -75,6 +75,22 @@ export const loginCustomer = async (req, res) => {
   }
 };
 
+export const logoutCustomer = (req, res) => {
+  if (!req.session) return res.status(200).json({ message: "Logged out" });
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to logout" });
+    }
+    res.clearCookie("sid", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+    });
+    return res.status(200).json({ message: "Logged out" });
+  });
+};
+
 export const createAddress = async (req, res) => {
   try {
     const {
@@ -151,27 +167,26 @@ export const getAllCustomers = async (req, res) => {
   }
 };
 
-export const deleteCustomerById = async (req, res) => {
+export const patchCustomer = async (req, res) => {
   try {
-    const { id } = req.params;
-    const customer = await prisma.customer.delete({ where: { id } });
-    return res.status(200).json(customer);
-  } catch (error) {
-    console.error("deleteCustomerById error:", error);
-    return res.status(500).json({ error: error.message });
-  }
-};
-
-export const patchCustomerById = async (req, res) => {
-  try {
-    const { id } = req.params;
+    const customerId = req.customer?.id || req.session?.customer?.id;
     const { name, email, phone } = req.body;
-    if (id) return res.status(404).json({ error: "Customer not found" });
+
+    if (!customerId) return res.status(401).json({ error: "Unauthorized" });
+
+    const data = {};
+    if (name !== undefined) data.name = name;
+    if (email !== undefined) data.email = email;
+    if (phone !== undefined) data.phone = phone;
+
     const customer = await prisma.customer.update({
-      where: { id },
-      data: { name, email, phone },
+      where: { id: customerId },
+      data,
     });
-    return res.status(200).json(customer);
+    return res.status(200).json({
+      message: "Customer updated successfully",
+      customer,
+    });
   } catch (error) {
     console.error("updateCustomerById error:", error);
     return res.status(500).json({ error: error.message });
@@ -194,16 +209,46 @@ export const getAddressesByCustomerId = async (req, res) => {
 export const patchAddressById = async (req, res) => {
   try {
     const { id } = req.params;
+    const customerId = req.customer?.id || req.session?.customer?.id;
+
     const { address, label, city, province, postalCode, latitude, longitude } =
       req.body;
-    if (id) return res.status(404).json({ error: "Address not found" });
+
+    if (!id) return res.status(400).json({ error: "Missing address id" });
+    if (!customerId) return res.status(401).json({ error: "Unauthorized" });
+
+    const data = {};
+    if (address !== undefined) data.address = address;
+    if (label !== undefined) data.label = label;
+    if (city !== undefined) data.city = city;
+    if (province !== undefined) data.province = province;
+    if (postalCode !== undefined) data.postalCode = postalCode;
+    if (latitude !== undefined) data.latitude = latitude;
+    if (longitude !== undefined) data.longitude = longitude;
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ error: "No fields to update" });
+    }
+
+    const exists = await prisma.address.findFirst({
+      where: { id, customerId },
+      select: { id: true },
+    });
+
+    if (!exists) {
+      return res.status(404).json({ error: "Address not found" });
+    }
+
     const addressCustomer = await prisma.address.update({
       where: { id },
-      data: { address, label, city, province, postalCode, latitude, longitude },
+      data,
     });
+
     return res.status(200).json(addressCustomer);
   } catch (error) {
-    console.error("updateAddressById error:", error);
+    if (error.code === "P2025") {
+      return res.status(404).json({ error: "Address not found" });
+    }
     return res.status(500).json({ error: error.message });
   }
 };
