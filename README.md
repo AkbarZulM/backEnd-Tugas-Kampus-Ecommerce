@@ -1,5 +1,7 @@
 > note :
 > menggunakan session dan cookie untuk masuk ke fungsi lain
+> untuk gambar upload bukti payment dari cloudinary
+> untuk gambar manual driver
 
 ## Admin
 
